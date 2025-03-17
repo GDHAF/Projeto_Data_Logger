@@ -2,6 +2,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
 #include <EEPROM.h>
+#include <RTClib.h>
+
+// Objeto RTC
+RTC_DS1307 rtc;
 
 // Definindo entradas do DHT22
 #define DHTPIN A3 
@@ -46,6 +50,7 @@ unsigned long tempoAnterior = 0;
 const unsigned long intervaloMenu = 2000; // Intervalo de 2 segundos para o menu
 
 void setup() {
+  Serial.begin(9600);
   lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -136,15 +141,41 @@ void menu() {
   delay(2000);
   lcd.clear();
 
-  // Armazenamento dos dados na EEPROM
-  EEPROM.put(eepromAddr, t);
-  eepromAddr += sizeof(float);
-  EEPROM.put(eepromAddr, h);
-  eepromAddr += sizeof(float);
-  EEPROM.put(eepromAddr, lumin);
-  eepromAddr += sizeof(int);
+// Armazenamento dos dados na EEPROM
+EEPROM.put(eepromAddr, t); // Armazena a temperatura
+eepromAddr += sizeof(float);
+Serial.print("Temperatura armazenada: ");
+Serial.print(t);
+Serial.println("C");
 
-  if (eepromAddr >= 1024) eepromAddr = 0; // Reinicia o endereço para evitar estouro da EEPROM
+EEPROM.put(eepromAddr, h); // Armazena a umidade
+eepromAddr += sizeof(float);
+Serial.print("Umidade armazenada: ");
+Serial.print(h);
+Serial.println("%");
+
+EEPROM.put(eepromAddr, lumin); // Armazena a luminosidade
+eepromAddr += sizeof(int);
+Serial.print("Luminosidade armazenada: ");
+Serial.println(lumin);
+
+// Obtém a hora atual do RTC
+DateTime now = rtc.now();
+int hora = now.hour();
+int minuto = now.minute();
+
+// Armazena a hora e os minutos na EEPROM
+EEPROM.put(eepromAddr, hora);
+eepromAddr += sizeof(int);
+Serial.print("Hora armazenada: ");
+Serial.println(hora);
+
+EEPROM.put(eepromAddr, minuto);
+eepromAddr += sizeof(int);
+Serial.print("Minuto armazenado: ");
+Serial.println(minuto);
+
+if (eepromAddr >= 1024) eepromAddr = 0; // Reinicia o endereço para evitar estouro da EEPROM
 }
 
 int TransformaFahrenheit(int t) {
