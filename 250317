@@ -1,0 +1,285 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+#include <EEPROM.h>
+#include <RTClib.h>
+
+// Objeto RTC
+RTC_DS1307 rtc;
+
+// Definindo entradas do DHT22
+#define DHTPIN A3 
+#define DHTTYPE DHT11 
+
+// Criando o objeto DHT
+DHT dht(DHTPIN, DHTTYPE);
+
+// Configuração do LCD 
+#define col 16
+#define lin 2
+#define ende 0x27
+
+LiquidCrystal_I2C lcd(ende, col, lin);
+
+// Sensores
+const int ldr = A2;
+
+// LED RGB
+const int blue = 10;
+const int green = 11;
+const int red = 12;
+
+// Botões
+const int btn1 = 2;
+const int btn2 = 3;
+
+// Buzzer
+const int buzzer = A0;
+
+// Variáveis de uso
+int min_luz = 0;
+int max_luz = 500;
+
+boolean fahrenheit = false;
+
+// Endereço na EEPROM
+int eepromAddr = 0;
+
+// Variáveis para controle de tempo
+unsigned long tempoAnterior = 0;
+const unsigned long intervaloMenu = 2000; // Intervalo de 2 segundos para o menu
+
+void setup() {
+  Serial.begin(9600);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
+  dht.begin(); // Inicializa o sensor DHT22
+
+  pinMode(ldr, INPUT);
+
+  pinMode(red, OUTPUT);
+  pinMode(green, OUTPUT);
+  pinMode(blue, OUTPUT);
+
+  pinMode(btn1, INPUT);
+  pinMode(btn2, INPUT);
+
+  pinMode(buzzer, OUTPUT);
+}
+
+void menu() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  int lumin = map(analogRead(ldr), 0, 969, 0, 100); 
+
+  if (isnan(t) || isnan(h)) {
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Failed to read DHT");
+    return;
+  } 
+
+  if (t < 15 || t > 25) {
+    lcd.clear();
+    alerta();
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Temp. crítica");
+    tone(buzzer, 150, 100); 
+    delay(120);             
+    tone(buzzer, 150, 200); 
+    delay(400);
+    lcd.clear();
+  }
+
+  if (h < 30 || h > 50) {
+    lcd.clear();
+    alerta();
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Umidade crítica");
+    tone(buzzer, 150, 100); 
+    delay(120);             
+    tone(buzzer, 150, 200); 
+    delay(400);
+    lcd.clear();
+  }
+
+  if (lumin < min_luz || lumin > (max_luz * 0.3)) {
+    lcd.clear();
+    alerta();
+    lcd.clear();
+    lcd.setCursor(1, 0);
+    lcd.print("Luminosidade Crítica");
+    tone(buzzer, 150, 100); 
+    delay(120);             
+    tone(buzzer, 150, 200); 
+    delay(400);
+    lcd.clear();
+  }
+
+  //Mostrando Umidade
+  lcd.setCursor(0, 0);
+  lcd.print("Umid: " + String(h));
+  lcd.setCursor(0, 1);
+  
+  //Mostrando Temperatura
+  if(fahrenheit == false){
+  lcd.print("Temp: " + String(t) + "C");
+  }
+  if(fahrenheit == true){
+    lcd.print("Temp: " + String(TransformaFahrenheit(t)) + "F");
+  }
+
+  delay(2000);
+  lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Lum: " + String(lumin));
+  delay(2000);
+  lcd.clear();
+
+// Armazenamento dos dados na EEPROM
+EEPROM.put(eepromAddr, t); // Armazena a temperatura
+eepromAddr += sizeof(float);
+Serial.print("Temperatura armazenada: ");
+Serial.print(t);
+Serial.println("C");
+
+EEPROM.put(eepromAddr, h); // Armazena a umidade
+eepromAddr += sizeof(float);
+Serial.print("Umidade armazenada: ");
+Serial.print(h);
+Serial.println("%");
+
+EEPROM.put(eepromAddr, lumin); // Armazena a luminosidade
+eepromAddr += sizeof(int);
+Serial.print("Luminosidade armazenada: ");
+Serial.println(lumin);
+
+// Obtém a hora atual do RTC
+DateTime now = rtc.now();
+int hora = now.hour();
+int minuto = now.minute();
+
+// Armazena a hora e os minutos na EEPROM
+EEPROM.put(eepromAddr, hora);
+eepromAddr += sizeof(int);
+Serial.print("Hora armazenada: ");
+Serial.println(hora);
+
+EEPROM.put(eepromAddr, minuto);
+eepromAddr += sizeof(int);
+Serial.print("Minuto armazenado: ");
+Serial.println(minuto);
+
+if (eepromAddr >= 1024) eepromAddr = 0; // Reinicia o endereço para evitar estouro da EEPROM
+}
+
+int TransformaFahrenheit(int t) {
+  int temperatura = (t * 1.8) + 32;
+  return temperatura;
+}
+
+void BateCoracao() {
+  analogWrite(red, 255);
+  tone(buzzer, 150, 100); 
+  delay(120);             
+  tone(buzzer, 150, 200); 
+  delay(800);
+  analogWrite(red, 0);
+}
+
+void alerta() {
+  digitalWrite(buzzer, HIGH);
+  delay(500);
+  digitalWrite(buzzer, LOW);
+  delay(500);
+}
+
+void ajustarLuminosidade() {
+  lcd.setCursor(1, 0);
+  lcd.print("Lumin Minima");
+
+  delay(1000);
+  analogWrite(blue, 255);
+
+  while (digitalRead(btn1) == LOW) {}
+
+  analogWrite(blue, 0);
+  BateCoracao();
+
+  min_luz = map(analogRead(ldr), 0, 969, 0, 100);
+  analogWrite(red, 0);
+  lcd.clear();
+  lcd.print(min_luz);
+  delay(2000);
+
+  lcd.clear();
+
+  delay(2000);
+  lcd.setCursor(1, 0);
+  lcd.print("Lumin Maxima");
+
+  analogWrite(blue, 255);
+  while (digitalRead(btn1) == LOW) {}
+  analogWrite(blue, 0);
+
+  BateCoracao();
+
+  max_luz = map(analogRead(ldr), 0, 969, 0, 100);
+  delay(500);
+  lcd.clear();
+  lcd.print(0.3 * max_luz);
+  delay(2000);
+  lcd.clear();
+}
+
+void menu2() {
+  lcd.clear();
+  lcd.print("Ajustar Lum?");
+
+  analogWrite(blue, 255);
+  while (digitalRead(btn1) == LOW && digitalRead(btn2) == LOW) {}
+  analogWrite(blue, 0);
+
+  lcd.clear();
+  if (digitalRead(btn1) == HIGH) {
+    ajustarLuminosidade();
+    lcd.clear();
+
+  }
+
+  delay(2500);
+
+  
+  lcd.print("Convert Temp");
+  analogWrite(blue, 255);
+  while (digitalRead(btn1) == LOW && digitalRead(btn2) == LOW) {}
+  analogWrite(blue, 0);
+  lcd.clear();
+
+  if (digitalRead(btn1) == HIGH) {
+    fahrenheit = !fahrenheit; 
+    
+  } 
+}
+
+void loop() {
+  // Verifica se o botão 2 foi pressionado
+  if (digitalRead(btn2) == HIGH && digitalRead(btn1) == HIGH) {
+    lcd.clear();
+    lcd.print("Aguarde...");
+    delay(4000);
+    lcd.clear();
+    menu2();
+  }
+
+  // Executa o menu principal em intervalos regulares
+  if (millis() - tempoAnterior >= intervaloMenu) {
+    tempoAnterior = millis();
+    menu();
+  }
+}
