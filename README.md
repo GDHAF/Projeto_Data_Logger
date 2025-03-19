@@ -34,7 +34,7 @@ Implementação de um dispositivo de registro de dados (data logger) dedicado ao
 
 ### Diagrama Elétrico
 
-<!-- Vou ver se consigo montar; se não, remover o título acima -->
+![Diagrama do data logger](/diagrama.png)
 
 ## Manual de Operação
 
