@@ -36,9 +36,9 @@ const int btn2 = 3;
 // Buzzer
 const int buzzer = A0;
 
-// Essas constantes devem corresponder aos atributos "gama" e "rl10" do fotoresistor
+// Dados do LDR (tirados do datasheet)
 const float GAMMA = 0.7;
-const float RL10 = 50;
+const float RL10 = 15;
 
 // Variáveis de uso
 float min_luz = 0;
@@ -77,20 +77,18 @@ void setup() {
   lcd.clear();
 }
 
-
-// Converte o valor analógico em valor lux:
 float medirLux(){
   int analogValue = analogRead(ldr);
   float voltage = analogValue / 1024. * 5;
   float resistance = 2000 * voltage / (1 - voltage / 5);
   float lux = pow(RL10 * 1e3 * pow(10, GAMMA) / resistance, (1 / GAMMA));
-  return lux
+  return lux;
 }
 
 void menu() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
-  float lumin = medirLux(); //
+  float lumin = medirLux(); 
 
   if (isnan(t) || isnan(h)) {
     lcd.clear();
@@ -228,6 +226,26 @@ void alerta() {
 }
 
 void ajustarLuminosidade() {
+  lcd.setCursor(1, 0);
+  lcd.print("Lumin Minima");
+
+  delay(1000);
+  analogWrite(blue, 255);
+
+  while (digitalRead(btn1) == LOW) {}
+
+  analogWrite(blue, 0);
+  BateCoracao();
+
+  min_luz = medirLux();
+  analogWrite(red, 0);
+  lcd.clear();
+  lcd.print(min_luz);
+  delay(2000);
+
+  lcd.clear();
+
+  delay(2000);
   lcd.setCursor(1, 0);
   lcd.print("Lumin Maxima");
 
