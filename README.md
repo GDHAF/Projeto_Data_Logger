@@ -56,6 +56,6 @@ Após o carregamento da tela, o dispositivo pergunta se o usuário deseja ajusta
 
 Na definição de luminosidade, o dispositivo primeiro pede a lum. mínima. Quando o LED ficar azul, o usuário pode colocar o sensor em um ambiente escuro, e então apertar o botão 1 para registrar a luminosidade como mínima; esta é então exibida na tela. Depois disso o usuário deve fazer o mesmo com a lum. máxima, pondo o sensor em ambiente iluminado e apertando o botão 1 para registrar; exibe-se então o valor de 30% da lum. máx. definida.
 
-#### Umidade de Temperatura
+#### Unidade de Temperatura
 
 Terminada a definição da luminosidade, ou tendo-na pulado com o botão 2, segue-se para a definição da unidade de temperatura. O dispositivo pergunta se o usuário deseja converter a temperatura entre as unidades de graus fahrenheit e graus celsius. Apertando o botão 1, a temperatura passará a ser exibida em °F se antes estava em °C, e vice-versa. O usuário também pode pular essa definição e voltar ao loop apertando o botão 2.
