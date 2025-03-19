@@ -17,7 +17,7 @@ Implementação de um dispositivo de registro de dados (data logger) dedicado ao
 ## Links
 
 **[Simulador (Wokwi)](https://wokwi.com/projects/424879193783436289)** - (obs: na simulação utilizou-se o DHT22)<br>
-**[Vídeo demonstrativo (YouTube)](example.com)** 
+**[Vídeo demonstrativo (YouTube)](https://youtu.be/dED7r_SWD3M)** 
 
 ## Expecificações Técnicas
 
